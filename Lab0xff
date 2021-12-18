@@ -12,9 +12,7 @@
 #define MAXN 10000
 int VERTICES[MAXN] = { 0 };
 double* ptr,
-    ** RANDOMM;
-
-double sum = 0;
+** RANDOMM;
 
 int ROUNDS = 0;
 //Coordinate Arrays
@@ -26,10 +24,12 @@ int PERMUTATE[MAXN][MAXN] = { 0 };
 int CITIES[MAXN];
 int PATH[MAXN];
 
+double smallestSum = INFINITE;
+
 
 
 double expectedDistance(int N) {
-    double expectedDistance =  pow(pow(X[0] - X[1], 2) + pow((Y[0] - Y[1]), 2), 0.5) * N;
+    double expectedDistance = RANDOMM[PATH[1]][PATH[0]] * N;
     return expectedDistance;
 }
 
@@ -38,7 +38,7 @@ void fillVertices(int N) {
         VERTICES[i] = i;
 }
 
-void swap(char* x, char* y)
+void swap(int* x, int* y)
 {
     char temp;
     temp = *x;
@@ -48,23 +48,27 @@ void swap(char* x, char* y)
 
 
 //from link in notes
-void permute(int *VERTICES, int l, int r)
+void permute(int* VERTICES, int l, int r)
 {
     double sum = 0;
     int tempCity = 0;
     int i;
-    double smallestSum = INFINITE;
+
     if (l == r) {
-        for (int j = 0; j < r - 1; j++) {
-            PATH[j] = VERTICES[j];
-            sum = sum + RANDOMM[j][VERTICES[j + 1]];
-            printf("new sum for %d: %lf\n", ROUNDS, sum);
-            tempCity = VERTICES[r - 1];
+        for (int j = 0; j < r ; j++) {
+            sum = sum + RANDOMM[VERTICES[j]][VERTICES[j + 1]];
+            tempCity = VERTICES[r];
         }
+
         sum = sum + RANDOMM[tempCity][0];
         if (sum < smallestSum) {
             smallestSum = sum;
+            for (int k = 0; k <= r; k++) {
+                PATH[k] = VERTICES[k];
+            }
+            
         }
+
         sum = 0;
         ROUNDS++;
     }
@@ -77,10 +81,10 @@ void permute(int *VERTICES, int l, int r)
             swap((VERTICES + l), (VERTICES + i));
         }
     }
-} 
+}
 
 //First Test Matrix
-void GenerateRandomCostMatrix(int vNum, int eCostMax){
+void GenerateRandomCostMatrix(int vNum, int eCostMax) {
     for (int i = 0; i < vNum; i++) {
         for (int j = 0; j < vNum; j++) {
             if (i == j) {
@@ -106,7 +110,7 @@ void GenerateRandomEuclideanCostMatrix(int vNum, int maxCoordinate) {
 
     for (int i = 0; i < vNum; i++) {
         for (int j = 0; j < vNum; j++) {
-            edgeWeight = pow(pow(X[i] - X[j], 2) + pow((Y[i] - Y[j]),2), 0.5);
+            edgeWeight = pow(pow(X[i] - X[j], 2) + pow((Y[i] - Y[j]), 2), 0.5);
             RANDOMM[i][j] = edgeWeight;
         }
     }
@@ -150,28 +154,9 @@ GenerateRandomCircularGraphCostMatrix(int N, int radius) {
 
 }
 
-double bruteForce(int N) {
+void bruteForce(int N) {
     fillVertices(N);
     permute(VERTICES, 1, N - 1);
-    double tempSum = 0;
-    double smallestSum = INFINITE;
-    int tempCity = 0;
-    int tempRoute = 0;
-
-    //for (int i = 0; i < ROUNDS; i++) {
-        //for (int j = 0; j < N - 1; j++) {
-           // tempSum = tempSum + RANDOMM[PERMUTATE[i][j]][PERMUTATE[i][j+1]];
-           // tempCity = PERMUTATE[i][j + 1];
-      //  }
-       // tempSum = tempSum + RANDOMM[tempCity][0];
-       //if (tempSum < smallestSum) {
-          //  smallestSum = tempSum;
-       //     tempRoute = i;
-   //     }
-    //    tempSum = 0;
- //   }
-    printf("do we get to the end of the brute force?");
-    return sum;
 }
 
 //Greedy Algorithm using the 'nearest neighbor' approach
@@ -252,7 +237,8 @@ void printVertices(int N) {
     for (int i = 0; i < N; i++) {
         if (i != N - 1) {
             printf("%d, ", VERTICES[i]);
-        }  else {
+        }
+        else {
             printf("%d", VERTICES[i]);
         }
     }
@@ -352,14 +338,14 @@ int  main() {
     }
     /////////////////////////////////////////////////////////////////////
 
-    int vNum = 4;
+    int vNum = 13;
     int radius = 10;
     GenerateRandomCircularGraphCostMatrix(vNum, radius);
     printVertices(vNum);
     printMatrix(vNum);
-    totalDistance = bruteForce(vNum);
+    bruteForce(vNum);
     printf("do we return here to main?");
-    printPath(vNum, totalDistance);
+    printPath(vNum, smallestSum);
     exactDistance = expectedDistance(vNum);
     printf("This is the exact distance: %lf", exactDistance);
 
@@ -380,9 +366,9 @@ int  main() {
 
     /*
 
-    long long int trialsCount_max = 10000, // increase as needed to avoid time measurements of zero 
+    long long int trialsCount_max = 10000, // increase as needed to avoid time measurements of zero
         N_min = 1,
-        N_max = MAXN, // adjust as needed, keep small for debugging 
+        N_max = MAXN, // adjust as needed, keep small for debugging
         trial;
 
     clock_t splitTimeStamp,
@@ -404,10 +390,10 @@ int  main() {
 
     int eCostMax = 20;
     int n;
-    double trialsTime_max = .250; // in seconds 
+    double trialsTime_max = .250; // in seconds
 
 
-    // For each size N of input we want to test -- typically start N at 1 and double each repetition 
+    // For each size N of input we want to test -- typically start N at 1 and double each repetition
 
     for (n = 1; n < N_max; n = n * 2) {
 
@@ -416,11 +402,11 @@ int  main() {
 
         splitTime = 0.0;
 
-        // get timestamp before set of trials are run: 
+        // get timestamp before set of trials are run:
 
         trialSetStart = clock();
 
-        // For each trial trialNumber=1 to Number of Trials per input size: 
+        // For each trial trialNumber=1 to Number of Trials per input size:
 
         for (trial = 0; trial < trialsCount_max && splitTime < trialsTime_max; trial++) {
 
@@ -428,22 +414,22 @@ int  main() {
             GenerateRandomCostMatrix(n, eCostMax);
             greedy(n);
 
-            splitTimeStamp = clock(); //  
-            splitTime = (splitTimeStamp - (double)trialSetStart) / (double)CLOCKS_PER_SEC; // CLOCK_PER_SEC define time.h  
+            splitTimeStamp = clock(); //
+            splitTime = (splitTimeStamp - (double)trialSetStart) / (double)CLOCKS_PER_SEC; // CLOCK_PER_SEC define time.h
 
         }
 
-        trialSetCount = (double)trial; // value of trial when loop ends is how many we did 
+        trialSetCount = (double)trial; // value of trial when loop ends is how many we did
 
-        trialSetTime = splitTime; // total time for trial set is the last split time 
+        trialSetTime = splitTime; // total time for trial set is the last split time
 
-        averageTrialTime = trialSetTime / trialSetCount; // this is the average tiem per trial, including any prep/overhead 
+        averageTrialTime = trialSetTime / trialSetCount; // this is the average tiem per trial, including any prep/overhead
 
 
 
         splitTime = 0.0;
 
-        // get timestamp before set of dummy trials are run: 
+        // get timestamp before set of dummy trials are run:
 
         trialSetStart = clock();
 
@@ -451,18 +437,18 @@ int  main() {
 
             greedy(n);
 
-            splitTimeStamp = clock(); //  
-            splitTime = (splitTimeStamp - (double)trialSetStart) / (double)CLOCKS_PER_SEC; // CLOCK_PER_SEC define time.h  
+            splitTimeStamp = clock(); //
+            splitTime = (splitTimeStamp - (double)trialSetStart) / (double)CLOCKS_PER_SEC; // CLOCK_PER_SEC define time.h
 
         }
 
-        dummySetCount = (double)trial; // value of trial when loop ends is how many we did, should be same as trialsSetCount 
+        dummySetCount = (double)trial; // value of trial when loop ends is how many we did, should be same as trialsSetCount
 
-        dummySetTime = splitTime; // total time for dummy trial set is the last split time 
+        dummySetTime = splitTime; // total time for dummy trial set is the last split time
 
-        averageDummyTrialTime = dummySetTime / dummySetCount; // this is the average tiem per dummy trial, including any prep/overhead 
+        averageDummyTrialTime = dummySetTime / dummySetCount; // this is the average tiem per dummy trial, including any prep/overhead
 
-        estimatedTimePerTrial = averageTrialTime - averageDummyTrialTime; // should be a decent measurement of time taken to run your algorithm 
+        estimatedTimePerTrial = averageTrialTime - averageDummyTrialTime; // should be a decent measurement of time taken to run your algorithm
 
 
         timeArr[timeCount] = estimatedTimePerTrial;
@@ -471,5 +457,5 @@ int  main() {
     printTable(timeCount, timeArr, 1);
     */
     free(RANDOMM);
-    
+
 }
