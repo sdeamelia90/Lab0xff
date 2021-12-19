@@ -7,6 +7,8 @@
 
 #define INFINITE 10000000
 
+double bf = 0;
+double gd = 0;
 
 //Random Cost Matrix Array
 #define MAXN 10000
@@ -25,11 +27,17 @@ int CITIES[MAXN];
 int PATH[MAXN];
 
 double smallestSum = INFINITE;
+double greedyArr[20] = { 0 };
+double bruteArr[20] = { 0 };
 
 
 
 double expectedDistance(int N) {
+    printf("***********************************************************\n");
+    printf("Testing Results\n");
+    printf("***********************************************************\n");
     double expectedDistance = RANDOMM[PATH[1]][PATH[0]] * N;
+    printf("The Expected Cost: %lf\n", expectedDistance);
     return expectedDistance;
 }
 
@@ -47,22 +55,28 @@ void swap(int* x, int* y)
 }
 
 
-//from link in notes
+//modified from link in video
 void permute(int* VERTICES, int l, int r)
 {
     double sum = 0;
     int tempCity = 0;
     int i;
 
+    //checks if permutation found
     if (l == r) {
+        //calculates the sum of all the edges in found permutation
         for (int j = 0; j < r ; j++) {
             sum = sum + RANDOMM[VERTICES[j]][VERTICES[j + 1]];
             tempCity = VERTICES[r];
         }
-
+        //adds the sum from last node back to start node.
         sum = sum + RANDOMM[tempCity][0];
+
+        //checks if new route is shorter
         if (sum < smallestSum) {
             smallestSum = sum;
+            bf = smallestSum;
+            //keeps track of new shortest route
             for (int k = 0; k <= r; k++) {
                 PATH[k] = VERTICES[k];
             }
@@ -74,6 +88,7 @@ void permute(int* VERTICES, int l, int r)
     }
     else
     {
+        //search for next permutation
         for (i = l; i <= r; i++)
         {
             swap((VERTICES + l), (VERTICES + i));
@@ -159,8 +174,8 @@ void bruteForce(int N) {
     permute(VERTICES, 1, N - 1);
 }
 
-//Greedy Algorithm using the 'nearest neighbor' approach
-double greedy(int N) {
+//Finding the nearest node until all nodes are visited once.
+void greedy(int N) {
     double totalDistance = 0;
     int cityCount = 0;
     double smallest = INFINITE;
@@ -203,18 +218,20 @@ double greedy(int N) {
     for (int i = 0; i < N; i++)
         CITIES[i] = 0;
 
-    return totalDistance;
+    smallestSum = totalDistance;
+    gd = smallestSum;
 }
 
 //Print Matrix
 void printMatrix(int vNum) {
+    printf("Cost Matrix\n");
+    printf("***********************************************************\n");
     for (int i = 0; i < vNum; i++) {
         for (int j = 0; j < vNum; j++) {
-            printf("%.2lf ", RANDOMM[i][j]);
+            printf("%-6.2lf ", RANDOMM[i][j]);
         }
         printf("\n");
     }
-    printf("\n");
 }
 
 void printTest(int vNum) {
@@ -222,43 +239,40 @@ void printTest(int vNum) {
 }
 
 void printPath(int N, double totalDistance) {
-
-    printf("Path Start->");
+    printf("Path Found Start: ");
     for (int i = 0; i < N; i++) {
         printf("%d ->", PATH[i]);
     }
     printf("%d ->End\n", PATH[N]);
-    printf("Total Shortest Distance: %lf\n\n", totalDistance);
+    printf("The Actual Cost: %lf\n", totalDistance);
+    printf("***********************************************************\n");
 
 }
 
 void printVertices(int N) {
-    printf("Vertices: (");
+    printf("***********************************************************\n");
+    printf("Vertices Sequence and Coordinates\n");
+    printf("***********************************************************\n");
     for (int i = 0; i < N; i++) {
-        if (i != N - 1) {
-            printf("%d, ", VERTICES[i]);
-        }
-        else {
-            printf("%d", VERTICES[i]);
-        }
+
+            printf("Vertex: %d  Coordinate: (%.2lf, %.2lf)\n", VERTICES[i], X[VERTICES[i]], Y[VERTICES[i]]);
     }
-    printf(")\n");
+    printf("***********************************************************\n");
 }
 
 void printTable(int timeCount, double TIME[], int sort) {
-    printf("%12s %14s %20s %16s %16s \n", "Power of 2", "  N  ", "Measured Time(s)", "Dbling Ratio", "Expected Ratio");
+    printf("%14s %20s %16s %16s \n","  N  ", "Measured Time(s)", "Dbling Ratio", "Expected Ratio");
     printf("======================================================================================================\n");
-    double n = 2;
+    int n = 2;
     double doubleRatio = 0;
     double theoryRatio = 0;
-    printf("%12d %12d %22.8lf %16s %16s\n", 0, 1, TIME[0], "-", "-");
 
     for (int i = 1; i < timeCount; i++) {
         if ((TIME[i - 1] == 0) | (TIME[i - 1] == -0)) {
             doubleRatio = 0;
         }
         else {
-            doubleRatio = TIME[i] / TIME[i - 1];
+            doubleRatio = TIME[i] / TIME[i / 2];
         }
         if (sort == 1) {
             theoryRatio = 4.0;
@@ -270,12 +284,30 @@ void printTable(int timeCount, double TIME[], int sort) {
             theoryRatio = 4.0;
         }
         else if (sort == 4) {
-            theoryRatio = 2 * log2(n) / (log2(n) - log2(2));
+            double temp = 1;
+            for (int j = 1; j < n; j++) {
+                temp = temp * j;
+            }
+            double temp2 = 1;
+
+            for (int j = 1; j < n / 2; j++) {
+                temp2 = temp2 * j;
+            }
+            theoryRatio = temp / temp2;
         }
-        printf("%12d %12lld %22.8lf %16.2lf %16.2lf\n", i, (long long int)n, TIME[i], doubleRatio, theoryRatio);
-        n = n * 2;
+
+        if (n >= 4) {
+            if (n % 2 == 0)
+                printf("%12lld %22.8lf %16.2lf %16.2lf\n", (long long int)n, TIME[i], doubleRatio, theoryRatio);
+            else {
+                char temp = '-';
+                printf("%12lld %22.8lf %16c %16c\n", (long long int)n, TIME[i], temp, temp);
+            } 
+   }
+        n++; //change back n = n * 2
     }
 }
+
 
 void TesterFunction() {
     double totalDistance = 0;
@@ -289,7 +321,7 @@ void TesterFunction() {
     printMatrix(vNum);
 
     //test for Greedy
-    totalDistance = greedy(vNum);
+    greedy(vNum);
     printPath(vNum, totalDistance);
 
     //test input for 2
@@ -299,7 +331,7 @@ void TesterFunction() {
     printMatrix(vNum);
 
     //test for Greedy
-    totalDistance = greedy(vNum);
+    greedy(vNum);
     printPath(vNum, totalDistance);
 
     //test input for 3
@@ -309,7 +341,7 @@ void TesterFunction() {
     printMatrix(vNum);
 
     //test for Greedy
-    totalDistance = greedy(vNum);
+    greedy(vNum);
 
     printVertices(vNum);
     printPath(vNum, totalDistance);
@@ -319,9 +351,8 @@ void TesterFunction() {
 
 int  main() {
 
-    double totalDistance = 0;
-    double exactDistance;
 
+    //Allocate for the cost array
     ///////////////////////////////////////////////////////////////////
     double len = sizeof(double*) * MAXN + sizeof(double) * MAXN * MAXN;
     RANDOMM = (double**)malloc(len);
@@ -337,18 +368,49 @@ int  main() {
         }
     }
     /////////////////////////////////////////////////////////////////////
+    double greedySum = 0;
+    double bruteSum = 0;
+    int tempCount = 9;
+    int n = 4;
+    for (int i = 0; i < tempCount; i++) {
+        for (int j = 0; j < 5; j++) {
+            GenerateRandomEuclideanCostMatrix(n, 100);
+            greedy(n);
+            greedySum = greedySum + gd;
 
-    int vNum = 13;
-    int radius = 10;
+            bruteForce(n);
+            bruteSum = bruteSum + bf;
+        }
+        n++;
+        gd = 0;
+        greedyArr[i] = greedySum / 5;
+        greedySum = 0;
+        bf = 0;
+        bruteArr[i] = bruteSum / 5;
+        bruteSum = 0;
+    }
+    n = 4;
+    printf("%12s %8s\n", "", "Greedy");
+    printf("===========================================================================\n");
+    printf("%12s %4s %13s %16s \n", "   N   ", "  Avg Solution Cost  ", "Avg Exact Solution Cost", "Average SQR");
+    printf("===========================================================================\n");
+    for (int i = 0; i < tempCount; i++) {
+        printf("%9d %17.8lf %19.8lf %26.8lf \n", n, greedyArr[i], bruteArr[i], greedyArr[i] / bruteArr[i]);
+        n++;
+    }
+
+
+/*
+    double totalDistance = 0;
+    int vNum = 10;
+    int radius = 100;
     GenerateRandomCircularGraphCostMatrix(vNum, radius);
     printVertices(vNum);
     printMatrix(vNum);
+    //greedy(vNum);
     bruteForce(vNum);
-    printf("do we return here to main?");
+    double exactDistance = expectedDistance(vNum);
     printPath(vNum, smallestSum);
-    exactDistance = expectedDistance(vNum);
-    printf("This is the exact distance: %lf", exactDistance);
-
     /*
     //Testing stuffz
     int vNum = MAXN;
@@ -364,11 +426,11 @@ int  main() {
     printPath(vNum, totalDistance);
     */
 
-    /*
 
+/*
     long long int trialsCount_max = 10000, // increase as needed to avoid time measurements of zero
         N_min = 1,
-        N_max = MAXN, // adjust as needed, keep small for debugging
+        N_max = 10, // adjust as needed, keep small for debugging
         trial;
 
     clock_t splitTimeStamp,
@@ -391,71 +453,74 @@ int  main() {
     int eCostMax = 20;
     int n;
     double trialsTime_max = .250; // in seconds
-
+    double distanceArr[1000] = { 0 };
 
     // For each size N of input we want to test -- typically start N at 1 and double each repetition
 
-    for (n = 1; n < N_max; n = n * 2) {
+        for (n = 1; n < N_max; n++) { ///*********************** CHANGE THIS BACK*(
 
-        // any preparations, test input generation, to be used for entire trial set
-
-
-        splitTime = 0.0;
-
-        // get timestamp before set of trials are run:
-
-        trialSetStart = clock();
-
-        // For each trial trialNumber=1 to Number of Trials per input size:
-
-        for (trial = 0; trial < trialsCount_max && splitTime < trialsTime_max; trial++) {
+            // any preparations, test input generation, to be used for entire trial set
 
 
-            GenerateRandomCostMatrix(n, eCostMax);
-            greedy(n);
+            splitTime = 0.0;
 
-            splitTimeStamp = clock(); //
-            splitTime = (splitTimeStamp - (double)trialSetStart) / (double)CLOCKS_PER_SEC; // CLOCK_PER_SEC define time.h
+            // get timestamp before set of trials are run:
 
+            trialSetStart = clock();
+
+            // For each trial trialNumber=1 to Number of Trials per input size:
+
+            for (trial = 0; trial < trialsCount_max && splitTime < trialsTime_max; trial++) {
+
+
+                GenerateRandomCostMatrix(n, 100);
+
+
+                    splitTimeStamp = clock(); //
+                splitTime = (splitTimeStamp - (double)trialSetStart) / (double)CLOCKS_PER_SEC; // CLOCK_PER_SEC define time.h
+
+            }
+
+            trialSetCount = (double)trial; // value of trial when loop ends is how many we did
+
+            trialSetTime = splitTime; // total time for trial set is the last split time
+
+            averageTrialTime = trialSetTime / trialSetCount; // this is the average tiem per trial, including any prep/overhead
+
+
+
+            splitTime = 0.0;
+
+            // get timestamp before set of dummy trials are run:
+
+            trialSetStart = clock();
+
+            for (trial = 0; trial < trialSetCount && splitTime < trialsTime_max; trial++) {
+
+                GenerateRandomCircularGraphCostMatrix(n, eCostMax);
+
+                splitTimeStamp = clock(); //
+                splitTime = (splitTimeStamp - (double)trialSetStart) / (double)CLOCKS_PER_SEC; // CLOCK_PER_SEC define time.h
+
+            }
+
+            dummySetCount = (double)trial; // value of trial when loop ends is how many we did, should be same as trialsSetCount
+
+            dummySetTime = splitTime; // total time for dummy trial set is the last split time
+
+            averageDummyTrialTime = dummySetTime / dummySetCount; // this is the average tiem per dummy trial, including any prep/overhead
+
+            estimatedTimePerTrial = averageTrialTime - averageDummyTrialTime; // should be a decent measurement of time taken to run your algorithm
+
+
+            timeArr[timeCount] = estimatedTimePerTrial;
+            distanceArr[timeCount] = smallestSum;
+            timeCount++;
         }
-
-        trialSetCount = (double)trial; // value of trial when loop ends is how many we did
-
-        trialSetTime = splitTime; // total time for trial set is the last split time
-
-        averageTrialTime = trialSetTime / trialSetCount; // this is the average tiem per trial, including any prep/overhead
+*/
+    //printTable(timeCount, timeArr, 4);
 
 
-
-        splitTime = 0.0;
-
-        // get timestamp before set of dummy trials are run:
-
-        trialSetStart = clock();
-
-        for (trial = 0; trial < trialSetCount && splitTime < trialsTime_max; trial++) {
-
-            greedy(n);
-
-            splitTimeStamp = clock(); //
-            splitTime = (splitTimeStamp - (double)trialSetStart) / (double)CLOCKS_PER_SEC; // CLOCK_PER_SEC define time.h
-
-        }
-
-        dummySetCount = (double)trial; // value of trial when loop ends is how many we did, should be same as trialsSetCount
-
-        dummySetTime = splitTime; // total time for dummy trial set is the last split time
-
-        averageDummyTrialTime = dummySetTime / dummySetCount; // this is the average tiem per dummy trial, including any prep/overhead
-
-        estimatedTimePerTrial = averageTrialTime - averageDummyTrialTime; // should be a decent measurement of time taken to run your algorithm
-
-
-        timeArr[timeCount] = estimatedTimePerTrial;
-        timeCount++;
-    }
-    printTable(timeCount, timeArr, 1);
-    */
     free(RANDOMM);
 
 }
