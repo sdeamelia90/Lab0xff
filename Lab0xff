@@ -11,7 +11,7 @@ double bf = 0;
 double gd = 0;
 
 //Random Cost Matrix Array
-#define MAXN 10000
+#define MAXN 1000
 int VERTICES[MAXN] = { 0 };
 double* ptr,
 ** RANDOMM;
@@ -41,7 +41,7 @@ double expectedDistance(int N) {
     printf("***********************************************************\n");
     printf("Testing Results\n");
     printf("***********************************************************\n");
-    double expectedDistance = RANDOMM[PATH[1]][PATH[0]] * N;
+    double expectedDistance = RANDOMM[VERTICES[1]][VERTICES[0]] * N;
     printf("The Expected Cost: %lf\n", expectedDistance);
     return expectedDistance;
 }
@@ -61,17 +61,18 @@ void swap(int* x, int* y)
 
 double attraction(int k, int h) {
     double x = 0;
-    x = (1 * PHEROMONES[k][h] / RANDOMM[k][h]);
+    x = ((1 + PHEROMONES[k][h]) / RANDOMM[k][h]);
+    //printf("This is x: %lf\n", x);
     return x;
 }
 
 double antColony(int N, int maxUnchanged) {
-    int M = 3; //number of ants, can change
+    int M = 5; // number of ants, can change
     double pFactor = 1; //can be increased
     double dFactor = 0.1; //can be changed
-    maxUnchanged = 5;
+    maxUnchanged = 1000;
     int unchanged = 0;
-    int timeStep = 1000000;
+    int timeStep = 10000;
     double pathCost = 0;
     int step = 0;
     int k = 0;
@@ -81,17 +82,27 @@ double antColony(int N, int maxUnchanged) {
     double totalProb = 0;
     double esProb = 0;
     double minPathCostSoFar = 1000000;
+    int homeNode = 0;
 
-    for (int i = 0; i < timeStep; i++) {
+    for (int i = 0; i < 1000; i++) {
+        //new ant
         for (int j = 0; j < M; j++) {
+            //starting node
+            homeNode = 0;
             pathCost = 0;
-            PATH[0] = 0;
-            CITIES[0] = 1;
+            int k = 0;
+            int h = 0;
+            //reset
+            for (int p = 0; p < N; p++) {
+                CITIES[p] = 0;
+                PATH[p] = 0;
+            }
+            PATH[0] = homeNode;
+            CITIES[homeNode] = 1;
 
-            for (step = 1; step < N - 1; step++) {
+            for (step = 1; step < N; step++) {
                 k = PATH[step - 1];
                 totalA = 0;
-
                 for (h = 0; h < N - 1; h++) {
                     if ((CITIES[h] == 0) && (h != k)) {
                         totalA = totalA + attraction(k, h); //attraction edge from k to h
@@ -100,11 +111,12 @@ double antColony(int N, int maxUnchanged) {
                 Q = (double)rand() / (double)RAND_MAX;
 
                 totalProb = 0;
+                //find total Probability
                 for (h = 0; h < N - 1; h++) {
                     if ((CITIES[h] == 0) && (h != k)) {
                         esProb = attraction(k, h) / totalA;
                         totalProb = totalProb + esProb;
-
+                        //determine next vertex
                         if (Q < totalProb) {
                             break;
                         }
@@ -115,8 +127,11 @@ double antColony(int N, int maxUnchanged) {
                 CITIES[h] = 1;
                 pathCost = pathCost + RANDOMM[k][h];
             }
-            pathCost = pathCost + RANDOMM[h][0];
 
+            //path cost after return to home
+            pathCost = pathCost + RANDOMM[h][homeNode];
+
+            //check if new cost is lowest
             if ((pathCost < minPathCostSoFar) || ((step == 1) && (M == 0))) {
                 minPathCostSoFar = pathCost;
                 for (int i = 0; i < N; i++) {
@@ -125,7 +140,7 @@ double antColony(int N, int maxUnchanged) {
                 unchanged = 0;
             }
             unchanged++;
-
+            //pheromones
             for (step = 0; step < N - 1; step++) {
                 k = PATH[step];
                 h = PATH[(step + 1) % N];
@@ -139,18 +154,26 @@ double antColony(int N, int maxUnchanged) {
                 PHEROMONES[k][h] = PHEROMONES[k][h] + NPHEROMONES[k][h];
             }
         }
-
-        for (int p = 0; p < N; p++) {
-            CITIES[p] = 0;
+        //check if common path
+        /*
+        if (unchanged == maxUnchanged) {
+            for (int i = 0; i < N; i++) {
+                PATH[i] = minPath[i];
+                smallestSum = minPathCostSoFar;
+                return 0;
+            }
         }
-
-    } if (unchanged == maxUnchanged) {
-        for (int i = 0; i < N; i++) {
-            PATH[i] = minPath[i];
-            smallestSum = minPathCostSoFar;
+        */
+        //reset pheromone
+        for (int c = 0; c < N; c++) {
+            for (int d = 0; d < N; d++) {
+                NPHEROMONES[c][d] = 0;
+            }
         }
-        return 0;
+        
     }
+    //final sum
+    smallestSum = minPathCostSoFar;
     return 0;
 }
 
@@ -164,7 +187,7 @@ void permute(int* VERTICES, int l, int r)
     //checks if permutation found
     if (l == r) {
         //calculates the sum of all the edges in found permutation
-        for (int j = 0; j < r ; j++) {
+        for (int j = 0; j < r; j++) {
             sum = sum + RANDOMM[VERTICES[j]][VERTICES[j + 1]];
             tempCity = VERTICES[r];
         }
@@ -179,7 +202,7 @@ void permute(int* VERTICES, int l, int r)
             for (int k = 0; k <= r; k++) {
                 PATH[k] = VERTICES[k];
             }
-            
+
         }
 
         sum = 0;
@@ -351,13 +374,13 @@ void printVertices(int N) {
     printf("***********************************************************\n");
     for (int i = 0; i < N; i++) {
 
-            printf("Vertex: %d  Coordinate: (%.2lf, %.2lf)\n", VERTICES[i], X[VERTICES[i]], Y[VERTICES[i]]);
+        printf("Vertex: %d  Coordinate: (%.2lf, %.2lf)\n", VERTICES[i], X[VERTICES[i]], Y[VERTICES[i]]);
     }
     printf("***********************************************************\n");
 }
 
 void printTable(int timeCount, double TIME[], int sort) {
-    printf("%14s %20s %16s %16s \n","  N  ", "Measured Time(s)", "Dbling Ratio", "Expected Ratio");
+    printf("%14s %20s %16s %16s \n", "  N  ", "Measured Time(s)", "Dbling Ratio", "Expected Ratio");
     printf("======================================================================================================\n");
     int n = 2;
     double doubleRatio = 0;
@@ -368,7 +391,7 @@ void printTable(int timeCount, double TIME[], int sort) {
             doubleRatio = 0;
         }
         else {
-            doubleRatio = TIME[i] / TIME[i / 2];
+            doubleRatio = TIME[i] / TIME[i-1];
         }
         if (sort == 1) {
             theoryRatio = 4.0;
@@ -377,7 +400,7 @@ void printTable(int timeCount, double TIME[], int sort) {
             theoryRatio = log2(n) / (log2(n) - log2(2));
         }
         else if (sort == 3) {
-            theoryRatio = 4.0;
+            theoryRatio = 4;
         }
         else if (sort == 4) {
             double temp = 1;
@@ -398,9 +421,9 @@ void printTable(int timeCount, double TIME[], int sort) {
             else {
                 char temp = '-';
                 printf("%12lld %22.8lf %16c %16c\n", (long long int)n, TIME[i], temp, temp);
-            } 
-   }
-        n++; //change back n = n * 2
+            }
+        }
+        n = n * 2; //change back n = n * 2
     }
 }
 
@@ -409,7 +432,7 @@ void TesterFunction() {
     double totalDistance = 0;
 
     //test input for 1
-    int vNum = 5;
+    int vNum = 20;
     int eCostMax = 5;
 
     GenerateRandomCostMatrix(vNum, eCostMax);
@@ -499,14 +522,15 @@ int  main() {
 
 
 */
+    /*
     double totalDistance = 0;
     int vNum = 10;
-    int radius = 100;
+    int radius = 10;
     GenerateRandomCircularGraphCostMatrix(vNum, radius);
     printVertices(vNum);
     printMatrix(vNum);
     //greedy(vNum);
-    antColony(vNum, 10);
+    double x = antColony(vNum, 10);
 
     double exactDistance = expectedDistance(vNum);
     printPath(vNum, smallestSum);
@@ -526,98 +550,99 @@ int  main() {
     */
 
 
-/*
-    long long int trialsCount_max = 10000, // increase as needed to avoid time measurements of zero
-        N_min = 1,
-        N_max = 10, // adjust as needed, keep small for debugging
-        trial;
 
-    clock_t splitTimeStamp,
-        trialSetStart;
+        long long int trialsCount_max = 10000, // increase as needed to avoid time measurements of zero
+            N_min = 1,
+            N_max = 1000, // adjust as needed, keep small for debugging
+            trial;
 
-    double splitTime,
-        trialSetCount,
-        trialSetTime,
-        dummySetCount,
-        dummySetTime,
-        averageTrialTime,
-        averageDummyTrialTime,
-        estimatedTimePerTrial;
+        clock_t splitTimeStamp,
+            trialSetStart;
 
-    double timeArr[1000] = { 0 };
+        double splitTime,
+            trialSetCount,
+            trialSetTime,
+            dummySetCount,
+            dummySetTime,
+            averageTrialTime,
+            averageDummyTrialTime,
+            estimatedTimePerTrial;
 
-    int timeCount = 0,
-        sort = 0;
+        double timeArr[1000] = { 0 };
 
-    int eCostMax = 20;
-    int n;
-    double trialsTime_max = .250; // in seconds
-    double distanceArr[1000] = { 0 };
+        int timeCount = 0,
+            sort = 0;
 
-    // For each size N of input we want to test -- typically start N at 1 and double each repetition
+        int eCostMax = 20;
+        int n;
+        double trialsTime_max = .250; // in seconds
+        double distanceArr[1000] = { 0 };
 
-        for (n = 1; n < N_max; n++) { ///*********************** CHANGE THIS BACK*(
+        // For each size N of input we want to test -- typically start N at 1 and double each repetition
 
-            // any preparations, test input generation, to be used for entire trial set
+            for (n = 1; n < N_max; n = n * 2) { ///*********************** CHANGE THIS BACK*(
 
-
-            splitTime = 0.0;
-
-            // get timestamp before set of trials are run:
-
-            trialSetStart = clock();
-
-            // For each trial trialNumber=1 to Number of Trials per input size:
-
-            for (trial = 0; trial < trialsCount_max && splitTime < trialsTime_max; trial++) {
+                // any preparations, test input generation, to be used for entire trial set
 
 
-                GenerateRandomCostMatrix(n, 100);
+                splitTime = 0.0;
+
+                // get timestamp before set of trials are run:
+
+                trialSetStart = clock();
+
+                // For each trial trialNumber=1 to Number of Trials per input size:
+
+                for (trial = 0; trial < trialsCount_max && splitTime < trialsTime_max; trial++) {
+
+
+                    GenerateRandomCostMatrix(n, 100);
+                    int x = antColony(n, 10);
 
 
                     splitTimeStamp = clock(); //
-                splitTime = (splitTimeStamp - (double)trialSetStart) / (double)CLOCKS_PER_SEC; // CLOCK_PER_SEC define time.h
+                    splitTime = (splitTimeStamp - (double)trialSetStart) / (double)CLOCKS_PER_SEC; // CLOCK_PER_SEC define time.h
 
+                }
+
+                trialSetCount = (double)trial; // value of trial when loop ends is how many we did
+
+                trialSetTime = splitTime; // total time for trial set is the last split time
+
+                averageTrialTime = trialSetTime / trialSetCount; // this is the average tiem per trial, including any prep/overhead
+
+
+
+                splitTime = 0.0;
+
+                // get timestamp before set of dummy trials are run:
+
+                trialSetStart = clock();
+
+                for (trial = 0; trial < trialSetCount && splitTime < trialsTime_max; trial++) {
+
+                    GenerateRandomCostMatrix(n, 100);
+
+                    splitTimeStamp = clock(); //
+                    splitTime = (splitTimeStamp - (double)trialSetStart) / (double)CLOCKS_PER_SEC; // CLOCK_PER_SEC define time.h
+
+                }
+
+                dummySetCount = (double)trial; // value of trial when loop ends is how many we did, should be same as trialsSetCount
+
+                dummySetTime = splitTime; // total time for dummy trial set is the last split time
+
+                averageDummyTrialTime = dummySetTime / dummySetCount; // this is the average tiem per dummy trial, including any prep/overhead
+
+                estimatedTimePerTrial = averageTrialTime - averageDummyTrialTime; // should be a decent measurement of time taken to run your algorithm
+
+
+                timeArr[timeCount] = estimatedTimePerTrial;
+                distanceArr[timeCount] = smallestSum;
+                timeCount++;
             }
 
-            trialSetCount = (double)trial; // value of trial when loop ends is how many we did
-
-            trialSetTime = splitTime; // total time for trial set is the last split time
-
-            averageTrialTime = trialSetTime / trialSetCount; // this is the average tiem per trial, including any prep/overhead
-
-
-
-            splitTime = 0.0;
-
-            // get timestamp before set of dummy trials are run:
-
-            trialSetStart = clock();
-
-            for (trial = 0; trial < trialSetCount && splitTime < trialsTime_max; trial++) {
-
-                GenerateRandomCircularGraphCostMatrix(n, eCostMax);
-
-                splitTimeStamp = clock(); //
-                splitTime = (splitTimeStamp - (double)trialSetStart) / (double)CLOCKS_PER_SEC; // CLOCK_PER_SEC define time.h
-
-            }
-
-            dummySetCount = (double)trial; // value of trial when loop ends is how many we did, should be same as trialsSetCount
-
-            dummySetTime = splitTime; // total time for dummy trial set is the last split time
-
-            averageDummyTrialTime = dummySetTime / dummySetCount; // this is the average tiem per dummy trial, including any prep/overhead
-
-            estimatedTimePerTrial = averageTrialTime - averageDummyTrialTime; // should be a decent measurement of time taken to run your algorithm
-
-
-            timeArr[timeCount] = estimatedTimePerTrial;
-            distanceArr[timeCount] = smallestSum;
-            timeCount++;
-        }
-*/
-    //printTable(timeCount, timeArr, 4);
+    printTable(timeCount, timeArr, 3);
 
 
     free(RANDOMM);
