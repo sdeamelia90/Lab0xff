@@ -29,6 +29,11 @@ int PATH[MAXN];
 double smallestSum = INFINITE;
 double greedyArr[20] = { 0 };
 double bruteArr[20] = { 0 };
+//ant stuffz
+double PHEROMONES[MAXN][MAXN] = { 0 };
+double NPHEROMONES[MAXN][MAXN] = { 0 };
+minPath[MAXN] = { 0 };
+
 
 
 
@@ -54,8 +59,102 @@ void swap(int* x, int* y)
     *y = temp;
 }
 
+double attraction(int k, int h) {
+    double x = 0;
+    x = (1 * PHEROMONES[k][h] / RANDOMM[k][h]);
+    return x;
+}
 
-//modified from link in video
+double antColony(int N, int maxUnchanged) {
+    int M = 3; //number of ants, can change
+    double pFactor = 1; //can be increased
+    double dFactor = 0.1; //can be changed
+    maxUnchanged = 5;
+    int unchanged = 0;
+    int timeStep = 1000000;
+    double pathCost = 0;
+    int step = 0;
+    int k = 0;
+    int h = 0;
+    double Q = 0;
+    double totalA = 0;
+    double totalProb = 0;
+    double esProb = 0;
+    double minPathCostSoFar = 1000000;
+
+    for (int i = 0; i < timeStep; i++) {
+        for (int j = 0; j < M; j++) {
+            pathCost = 0;
+            PATH[0] = 0;
+            CITIES[0] = 1;
+
+            for (step = 1; step < N - 1; step++) {
+                k = PATH[step - 1];
+                totalA = 0;
+
+                for (h = 0; h < N - 1; h++) {
+                    if ((CITIES[h] == 0) && (h != k)) {
+                        totalA = totalA + attraction(k, h); //attraction edge from k to h
+                    }
+                }
+                Q = (double)rand() / (double)RAND_MAX;
+
+                totalProb = 0;
+                for (h = 0; h < N - 1; h++) {
+                    if ((CITIES[h] == 0) && (h != k)) {
+                        esProb = attraction(k, h) / totalA;
+                        totalProb = totalProb + esProb;
+
+                        if (Q < totalProb) {
+                            break;
+                        }
+                    }
+
+                }
+                PATH[step] = h;
+                CITIES[h] = 1;
+                pathCost = pathCost + RANDOMM[k][h];
+            }
+            pathCost = pathCost + RANDOMM[h][0];
+
+            if ((pathCost < minPathCostSoFar) || ((step == 1) && (M == 0))) {
+                minPathCostSoFar = pathCost;
+                for (int i = 0; i < N; i++) {
+                    minPath[i] = PATH[i];
+                }
+                unchanged = 0;
+            }
+            unchanged++;
+
+            for (step = 0; step < N - 1; step++) {
+                k = PATH[step];
+                h = PATH[(step + 1) % N];
+                NPHEROMONES[k][h] = NPHEROMONES[k][h] + pFactor / pathCost;
+            }
+        }
+
+        for (int y = 0; y < N - 1; y++) {
+            for (h = 0; h < N - 1; h++) {
+                PHEROMONES[k][h] = PHEROMONES[k][h] / dFactor;
+                PHEROMONES[k][h] = PHEROMONES[k][h] + NPHEROMONES[k][h];
+            }
+        }
+
+        for (int p = 0; p < N; p++) {
+            CITIES[p] = 0;
+        }
+
+    } if (unchanged == maxUnchanged) {
+        for (int i = 0; i < N; i++) {
+            PATH[i] = minPath[i];
+            smallestSum = minPathCostSoFar;
+        }
+        return 0;
+    }
+    return 0;
+}
+
+//modified from link in lecture
 void permute(int* VERTICES, int l, int r)
 {
     double sum = 0;
@@ -234,9 +333,6 @@ void printMatrix(int vNum) {
     }
 }
 
-void printTest(int vNum) {
-
-}
 
 void printPath(int N, double totalDistance) {
     printf("Path Found Start: ");
@@ -368,6 +464,8 @@ int  main() {
         }
     }
     /////////////////////////////////////////////////////////////////////
+
+    /*
     double greedySum = 0;
     double bruteSum = 0;
     int tempCount = 9;
@@ -400,7 +498,7 @@ int  main() {
     }
 
 
-/*
+*/
     double totalDistance = 0;
     int vNum = 10;
     int radius = 100;
@@ -408,7 +506,8 @@ int  main() {
     printVertices(vNum);
     printMatrix(vNum);
     //greedy(vNum);
-    bruteForce(vNum);
+    antColony(vNum, 10);
+
     double exactDistance = expectedDistance(vNum);
     printPath(vNum, smallestSum);
     /*
